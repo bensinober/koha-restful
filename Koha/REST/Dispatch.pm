@@ -54,7 +54,7 @@ sub dispatch_args {
                 => { app => 'Catalogue', rm => 'item_is_holdable' },
             'auth/change_password[put]'
                 => { app => 'Auth', rm => 'put_password' },
-            'holds/:branch/for_branch[get]'
+            'holds/:branchcode/for_branch[get]'
                 => { app => 'Holds', rm => 'get_holds_for_branch' },
         ],
     };

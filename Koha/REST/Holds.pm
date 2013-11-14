@@ -23,18 +23,18 @@ sub setup {
 
 sub rm_get_holds_for_branch {
     my $self = shift;
-    my $branch = $self->param('branch');
+    my $branchcode = $self->param('branchcode');
 
-    return format_response($self, get_holds_for_branch($branch));
+    return format_response($self, get_holds_for_branch($branchcode));
 }
 
 # return current holds for a branch
 sub get_holds_for_branch {
-    my ($branch) = @_;
-    return [] unless ($branch);
+    my ($branchcode) = @_;
+    return [] unless ($branchcode);
 
     my $response = [];
-    my @holds = C4::Reserves::GetReservesForBranch($branch);
+    my @holds = C4::Reserves::GetReservesForBranch($branchcode);
     foreach my $hold (@holds) {
         # Up to Koha 3.8 GetBiblio returns an array whose last element is the
         # biblio hash.
