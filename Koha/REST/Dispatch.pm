@@ -55,7 +55,7 @@ sub dispatch_args {
             'auth/change_password[put]'
                 => { app => 'Auth', rm => 'put_password' },
             'holds/:branch/frombranch[get]'
-                => { app => 'Holds', rm => 'get_holds_from_branch' },
+                => { app => 'Holds', rm => 'get_holds_for_branch' },
         ],
     };
 }

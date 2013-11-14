@@ -17,7 +17,7 @@ use JSON;
 sub setup {
     my $self = shift;
     $self->run_modes(
-        get_holds_from_branch => 'rm_get_holds_for_branch',
+        get_holds_for_branch => 'rm_get_holds_for_branch',
     );
 }
 
