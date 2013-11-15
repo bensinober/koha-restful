@@ -1,4 +1,4 @@
-package Koha::REST::holds;
+package Koha::REST::Holds;
 
 use base 'CGI::Application';
 use Modern::Perl;
