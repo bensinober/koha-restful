@@ -32,7 +32,7 @@ sub rm_get_holds_for_branch {
 }
 
 # return array of biblio items with pendings holds
-sub get_pending_holds {
+sub get_pending_hold_biblionumbers {
     my @pending_holds = C4::HoldsQueue::GetBibsWithPendingHoldRequests();
     return @pending_holds;
 }
@@ -45,14 +45,17 @@ sub get_holds_for_branch {
     my $response = [];
     
     #my @holds = C4::Reserves::GetReservesForBranch($branchcode);
-    my @pending_holds = get_pending_holds();
-    return $pending_holds;
-    # foreach my $pending_hold (@pending_holds) {
-    #     my @hold = C4::Reserves::GetReservesFromBiblionumber($pending_hold);
-    #     push @$response, {
-    #         hold => @hold[0];
-    #     };
-    # }
+    my @pending_hold_biblionumbers = C4::HoldsQueue::GetBibsWithPendingHoldRequests();
+    
+    foreach my $pending_hold_biblionumber (@pending_hold_biblionumbers) {
+        my @holds = C4::HoldsQueue::GetPendingHoldRequestsForBib($pending_hold_biblionumber);
+        # my @hold = C4::Reserves::GetReservesFromBiblionumber($pending_hold_biblionumber);
+        foreach my $hold (@holds) {
+            push @$response, {
+                $hold;
+            };
+        };
+    };
     # foreach my $hold (@holds) {
     #     my $biblio = (C4::Biblio::GetBiblio($hold->{biblionumber}))[-1];
     #     my $item = C4::Items::GetItem($hold->{itemnumber});
