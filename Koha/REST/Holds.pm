@@ -45,14 +45,19 @@ sub get_holds_for_branch {
     my $response = [];
     
     #my @holds = C4::Reserves::GetReservesForBranch($branchcode);
-    my @pending_hold_biblionumbers = C4::HoldsQueue::GetBibsWithPendingHoldRequests();
-    
-    foreach my $pending_hold_biblionumber (@pending_hold_biblionumbers) {
-        my @holds = C4::HoldsQueue::GetPendingHoldRequestsForBib($pending_hold_biblionumber);
-        # my @hold = C4::Reserves::GetReservesFromBiblionumber($pending_hold_biblionumber);
-        foreach my $hold (@holds) {
+    my $pending_hold_biblionumbers = C4::HoldsQueue::GetBibsWithPendingHoldRequests();
+    # my @pending_hold_biblionumbers = C4::HoldsQueue::GetHoldsQueueItems($branchcode);
+    foreach my $pending_hold_biblionumber (@$pending_hold_biblionumbers) {
+        my $holds = C4::HoldsQueue::GetPendingHoldRequestsForBib($pending_hold_biblionumber);
+        my $reserves = C4::Reserves::GetReservesFromBiblionumber($pending_hold_biblionumber);
+        foreach my $hold (@$holds) {
             push @$response, {
-                $hold;
+                hold => $hold
+            };
+        };
+        foreach my $reserve (@$reserves) {
+            push @$response, {
+                reserve => $reserve
             };
         };
     };
@@ -74,8 +79,7 @@ sub get_holds_for_branch {
     #         found => $hold->{found},
     #     };
     # }
-
-    # return $response;
+    return $response;
 }
 
 1;
