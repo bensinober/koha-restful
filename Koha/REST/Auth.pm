@@ -31,7 +31,7 @@ sub rm_put_password {
         warn $borrower->{'borrowernumber'};
 
         # Changing the password
-        $result = ModMember(borrowernumber => $borrower->{'borrowernumber'}, password => $newpassword);
+        #$result = ModMember(borrowernumber => $borrower->{'borrowernumber'}, password => $newpassword);
     }
 
     push @$response, {

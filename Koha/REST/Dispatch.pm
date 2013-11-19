@@ -56,6 +56,8 @@ sub dispatch_args {
                 => { app => 'Auth', rm => 'put_password' },
             'holds/all[get]'
                 => { app => 'Holds', rm => 'get_all_holds' },
+            'holds/:biblionumber/:itemnumber/:borrowernumber/found_book[put]'
+                => { app => 'Holds', rm => 'put_found_book' },                
             'holds/pending[get]'
                 => { app => 'Holds', rm => 'get_pending_holds' },                               
             'holds/:branchcode/for_branch[get]'

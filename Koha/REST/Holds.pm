@@ -22,12 +22,41 @@ sub setup {
         get_all_holds        => 'rm_get_all_holds',
         get_pending_holds    => 'rm_get_pending_holds',
         get_holds_for_branch => 'rm_get_holds_for_branch',
+        put_found_book       => 'rm_put_found_book',
     );
 }
 
 sub rm_get_all_holds {
     my $self = shift;
     return format_response($self, get_all_holds() );
+}
+
+sub rm_put_found_book {
+    my $self = shift;
+    my $biblionumber = $self->param('biblionumber');
+    my $itemnumber = $self->param('itemnumber');
+    my $borrowernumber = $self->param('borrowernumber');
+
+    my $response;
+    
+    my $reserve_id = C4::Reserves::GetReserveId({ biblionumber => $biblionumber, borrowernumber => $borrowernumber});
+    my $reserve_info = C4::Reserves::GetReserveInfo($reserve_id);
+    #my $modreserve = C4::Reserves::ModReserveAffect($itemnumber, $borrowernumber);
+    my $modreserve = ModReserve({ 
+        rank => 'del',
+        reserve_id => $reserve_id,
+        branchcode => 'hutl',
+        itemnumber => $itemnumber,
+        biblionumber => $biblionumber, 
+        borrowernumber => $borrowernumber,
+    });
+    push @$response, {
+        reserve_id => $reserve_id,
+        reserve_info => $reserve_info,
+        mod_reserve => $modreserve,
+    };
+    
+    return format_response($self, $response );
 }
 
 sub rm_get_pending_holds {
