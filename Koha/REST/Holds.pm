@@ -48,8 +48,8 @@ sub rm_put_found_book {
 
     my $response;
     
-    my $reserve_id = C4::Reserves::GetReserveId({ biblionumber => $biblionumber, borrowernumber => $borrowernumber});
-    my $reserve_info = C4::Reserves::GetReserveInfo($reserve_id);
+    #my $reserve_id = C4::Reserves::GetReserveId({ biblionumber => $biblionumber, borrowernumber => $borrowernumber});
+    #my $reserve_info = C4::Reserves::GetReserveInfo($reserve_id);
 
     # ModReserveAffect fills hold and marks book as Waiting or Transit
     my $modreserve = C4::Reserves::ModReserveAffect($itemnumber, $borrowernumber);
@@ -66,8 +66,8 @@ sub rm_put_found_book {
     C4::HoldsQueue::CreateQueue();  # rebuild holds queue
 
     push @$response, {
-        reserve_id => $reserve_id,
-        reserve_info => $reserve_info,
+#        reserve_id => $reserve_id,
+#        reserve_info => $reserve_info,
         mod_reserve => $modreserve,
     };
     
