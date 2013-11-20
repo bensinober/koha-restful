@@ -20,15 +20,24 @@ sub setup {
     my $self = shift;
     $self->run_modes(
         get_all_holds        => 'rm_get_all_holds',
+        put_found_book       => 'rm_put_found_book',
         get_pending_holds    => 'rm_get_pending_holds',
         get_holds_for_branch => 'rm_get_holds_for_branch',
-        put_found_book       => 'rm_put_found_book',
     );
 }
 
+# return all holds in queue
 sub rm_get_all_holds {
     my $self = shift;
-    return format_response($self, get_all_holds() );
+    C4::HoldsQueue::CreateQueue();  # rebuild holds queue
+    my $response = [];
+    my $pending_holds = GetHoldsQueueItems();
+    foreach my $pending_hold (@$pending_holds) {
+        push @$response, {
+            hold => $pending_hold
+        };
+    };
+    return format_response($self, [@$pending_holds] );
 }
 
 sub rm_put_found_book {
@@ -41,15 +50,21 @@ sub rm_put_found_book {
     
     my $reserve_id = C4::Reserves::GetReserveId({ biblionumber => $biblionumber, borrowernumber => $borrowernumber});
     my $reserve_info = C4::Reserves::GetReserveInfo($reserve_id);
-    #my $modreserve = C4::Reserves::ModReserveAffect($itemnumber, $borrowernumber);
-    my $modreserve = ModReserve({ 
-        rank => 'del',
-        reserve_id => $reserve_id,
-        branchcode => 'hutl',
-        itemnumber => $itemnumber,
-        biblionumber => $biblionumber, 
-        borrowernumber => $borrowernumber,
-    });
+
+    # ModReserveAffect fills hold and marks book as Waiting or Transit
+    my $modreserve = C4::Reserves::ModReserveAffect($itemnumber, $borrowernumber);
+    # my $modreserve = ModReserve({ 
+    #     rank => 'del',
+    #     reserve_id => $reserve_id,
+    #     branchcode => 'hutl',
+    #     itemnumber => $itemnumber,
+    #     biblionumber => $biblionumber, 
+    #     borrowernumber => $borrowernumber,
+    # });
+
+    # Rebuild holdsqueue
+    C4::HoldsQueue::CreateQueue();  # rebuild holds queue
+
     push @$response, {
         reserve_id => $reserve_id,
         reserve_info => $reserve_info,
@@ -59,13 +74,9 @@ sub rm_put_found_book {
     return format_response($self, $response );
 }
 
+# return array of biblio items with pendings holds
 sub rm_get_pending_holds {
     my $self = shift;
-    return format_response($self, get_pending_holds() );
-}
-
-# return array of biblio items with pendings holds
-sub get_pending_holds {
     my $response = [];
     my $pending_hold_biblionumbers = C4::HoldsQueue::GetBibsWithPendingHoldRequests();
     foreach my $pending_hold_biblionumber (@$pending_hold_biblionumbers) {
@@ -77,30 +88,14 @@ sub get_pending_holds {
         };
     };
 
-    return $response;
-}
-
-sub rm_get_holds_for_branch {
-    my $self = shift;
-    my $branchcode = $self->param('branchcode');
-    return format_response($self, get_holds_for_branch($branchcode));
-}
-
-# return all holds in queue
-sub get_all_holds {
-    my $response = [];
-    my $pending_holds = GetHoldsQueueItems();
-    foreach my $pending_hold (@$pending_holds) {
-        push @$response, {
-            hold => $pending_hold
-        };
-    };
-    return [@$pending_holds];
+    return format_response($self, $response );
 }
 
 # return current holds for a branch
-sub get_holds_for_branch {
-    my ($branchcode) = @_;
+# NOT USED!
+sub rm_get_holds_for_branch {
+    my $self = shift;
+    my $branchcode = $self->param('branchcode');
     return [] unless ($branchcode);
 
     my $response = [];
@@ -137,7 +132,7 @@ sub get_holds_for_branch {
             };
         };
     };
-    return $response;
+    return format_response($self, $response);
 }
 
 1;
