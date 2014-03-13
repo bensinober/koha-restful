@@ -33,8 +33,21 @@ sub items_columns {
 sub rm_get_biblio_items {
     my $self = shift;
     my $biblionumber = $self->param('biblionumber');
+    my $q = $self->query();
+    my $get_reserves = $q->param('reserves');
 
     my $response = [];
+
+    my %reserves;
+    if ($get_reserves) {
+        my $res = C4::Reserves::GetReservesFromBiblionumber($biblionumber);
+        if ($res) {
+            foreach my $reserve (@$res) {
+                push @{ $reserves{ $reserve->{itemnumber} } }, $reserve;
+            }
+        }
+    }
+
     my @all_items = C4::Items::GetItemsInfo($biblionumber);
     foreach my $item (@all_items) {
         my $holdingbranchname = C4::Branch::GetBranchName($item->{holdingbranch});
@@ -46,6 +59,13 @@ sub rm_get_biblio_items {
             withdrawn => $item->{wthdrawn},
             date_due => $item->{datedue},
         };
+
+        if (exists $reserves{ $item->{itemnumber} }) {
+            $r->{reserves} = $reserves{ $item->{itemnumber} };
+        } elsif ($get_reserves) {
+            $r->{reserves} = [];
+        }
+
         push @$response, $r;
     }
 
@@ -204,6 +224,38 @@ sub biblio_is_holdable {
     return wantarray ? (0, $reasons) : 0;
 }
 
+sub item_is_holdable {
+    my ($borrowernumber, $itemnumber) = @_;
+
+    my $is_holdable = 0;
+
+    if ($borrowernumber and $itemnumber) {
+        my $item = C4::Items::GetItem($itemnumber);
+        my $biblionumber = $item->{biblionumber};
+
+        my $can_reserve = C4::Reserves::CanItemBeReserved($borrowernumber, $itemnumber);
+
+        # This shouldn't be here. It should be in the
+        # C4::Reserves::CanItemBeReserved function. But that's how koha works.
+        my $available = IsAvailableForItemLevelRequest($itemnumber);
+
+        my @reserves = C4::Reserves::GetReservesFromBorrowernumber($borrowernumber);
+        my $already_reserved = 0;
+        foreach my $reserve (@reserves) {
+            if (   $reserve->{biblionumber} == $biblionumber
+                || $reserve->{itemnumber} == $itemnumber )
+            {
+                $already_reserved = 1;
+                last;
+            }
+        }
+
+        $is_holdable = ($can_reserve && $available && !$already_reserved);
+    }
+
+    return $is_holdable;
+}
+
 # check if a biblio is holdable
 sub rm_biblio_is_holdable {
     my $self = shift;
@@ -216,7 +268,7 @@ sub rm_biblio_is_holdable {
     my ($can_reserve, $reasons) = (undef, []);
     if ($borrowernumber) {
         if ($itemnumber) {
-            $can_reserve = C4::Reserves::CanItemBeReserved($borrowernumber, $itemnumber);
+            $can_reserve = item_is_holdable($borrowernumber, $itemnumber);
         } else {
             ($can_reserve, $reasons) = biblio_is_holdable($borrowernumber, $biblionumber);
         }
@@ -252,10 +304,7 @@ sub rm_get_biblio_items_holdable_status {
         foreach my $itemnumber (@{ $itemnumbers->{$biblionumber} }) {
             my $is_holdable;
             if ($borrowernumber) {
-                my $can_reserve = C4::Reserves::CanItemBeReserved($borrowernumber, $itemnumber);
-                # This shouldn't be here. It should be in the C4::Reserves::CanItemBeReserved function. But that's how koha works.
-                my $available = IsAvailableForItemLevelRequest($itemnumber);
-                $is_holdable = $can_reserve && $available;
+                $is_holdable = item_is_holdable($borrowernumber, $itemnumber);
             } else {
                 $is_holdable = 0;
             }
@@ -281,7 +330,7 @@ sub rm_item_is_holdable {
 
     my $can_reserve;
     if ($borrowernumber) {
-        $can_reserve = C4::Reserves::CanItemBeReserved($borrowernumber, $itemnumber);
+        $can_reserve = item_is_holdable($borrowernumber, $itemnumber);
     } else {
         $can_reserve = 0;
     }

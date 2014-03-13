@@ -44,6 +44,8 @@ sub dispatch_args {
                 => { app => 'User', rm => 'login_exists' },
             'user[post]'
                 => { app => 'User', rm => 'create_user' },
+            'user/:user_name[put]'
+                => { app => 'User', rm => 'edit_user' },
             'biblio/:biblionumber/items[get]'
                 => { app => 'Catalogue', rm => 'get_biblio_items' },
             'biblio/:biblionumber/holdable[get]'
@@ -62,6 +64,16 @@ sub dispatch_args {
                 => { app => 'Holds', rm => 'get_pending_holds' },                               
             'holds/:branchcode/for_branch[get]'
                 => { app => 'Holds', rm => 'get_holds_for_branch' },
+            'suggestions[get]'
+                => { app => 'Suggestions', rm => 'get_suggestions' },
+            'suggestions/:suggestionid[get]'
+                => { app => 'Suggestions', rm => 'get_suggestion' },
+            'suggestions[post]'
+                => { app => 'Suggestions', rm => 'create_suggestion' },
+            'suggestions/:suggestionid[put]'
+                => { app => 'Suggestions', rm => 'edit_suggestion' },
+            'suggestions/:suggestionid[delete]'
+                => { app => 'Suggestions', rm => 'delete_suggestion' },
         ],
     };
 }
