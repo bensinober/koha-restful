@@ -12,6 +12,8 @@ use List::MoreUtils qw(any);
 
 my $conf_path = dirname($ENV{KOHA_CONF});
 my $conf = YAML::LoadFile("$conf_path/rest/config.yaml");
+$conf->{debug} //= 0;
+
 # First of all, let's test if the client IP is allowed to use our service
 # If the remote address is not allowed, redirect to 403
 my @AuthorizedIPs = $conf->{authorizedips} ? @{ $conf->{authorizedips} } : ();
@@ -19,7 +21,7 @@ if ( !@AuthorizedIPs # If no filter set, allow access to no one!
     or not any { $ENV{'REMOTE_ADDR'} eq $_ } @AuthorizedIPs # IP Check
     ) {
     CGI::Application::Dispatch->dispatch(
-        debug => 1,
+        debug => $conf->{debug},
         prefix => 'Koha::REST',
         table => [
             '*' => { app => 'Auth', rm => 'forbidden' },
@@ -33,7 +35,7 @@ if ( !@AuthorizedIPs # If no filter set, allow access to no one!
 use Koha::REST::Dispatch;
 
 Koha::REST::Dispatch->dispatch(
-    debug => 1,
+    debug => $conf->{debug},
 );
 
 __END__
@@ -497,6 +499,23 @@ A JSON object with the following keys:
 =back
 
 =back
+
+=head3 DELETE user/:user_name
+
+=over 2
+
+Delete user
+
+Required parameters:
+
+=over 2
+
+=item * user_name: username (userid) of user to delete.
+
+=back
+
+=back
+
 
 =head2 Biblio
 

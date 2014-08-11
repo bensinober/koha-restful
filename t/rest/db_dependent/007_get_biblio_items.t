@@ -6,7 +6,7 @@ use FindBin qw( $Bin );
 
 use lib "$Bin/../../..";
 use t::rest::lib::Mocks;
-use Test::More tests => 6;
+use Test::More tests => 258;
 use Test::WWW::Mechanize::CGIApp;
 use JSON;
 use Data::Dumper;
@@ -26,7 +26,6 @@ my $expected =  [
         'withdrawn' => '0',
         'biblioitemnumber' => '1',
         'restricted' => undef,
-        'wthdrawn' => '0',
         'holdingbranchname' => 'Midway',
         'notforloan' => '0',
         'replacementpricedate' => '2013-04-30',
@@ -53,7 +52,7 @@ my $expected =  [
         'biblionumber' => '1',
         'renewals' => undef,
         'holdingbranch' => 'MPL',
-        'timestamp' => '2013-04-30 10:34:08',
+        'timestamp' => '2013-04-30 08:34:08',
         'damaged' => '0',
         'cn_sort' => '',
         'stocknumber' => undef,
@@ -71,7 +70,6 @@ my $expected =  [
         'withdrawn' => '0',
         'biblioitemnumber' => '1',
         'restricted' => undef,
-        'wthdrawn' => '0',
         'holdingbranchname' => 'Midway',
         'notforloan' => '0',
         'replacementpricedate' => '2013-04-30',
@@ -98,7 +96,7 @@ my $expected =  [
         'biblionumber' => '1',
         'renewals' => undef,
         'holdingbranch' => 'MPL',
-        'timestamp' => '2013-04-30 10:34:08',
+        'timestamp' => '2013-04-30 08:34:08',
         'damaged' => '0',
         'cn_sort' => '',
         'stocknumber' => undef,
@@ -116,7 +114,6 @@ my $expected =  [
         'withdrawn' => '0',
         'biblioitemnumber' => '1',
         'restricted' => undef,
-        'wthdrawn' => '0',
         'holdingbranchname' => 'Midway',
         'notforloan' => '0',
         'replacementpricedate' => '2013-04-30',
@@ -143,7 +140,7 @@ my $expected =  [
         'biblionumber' => '1',
         'renewals' => undef,
         'holdingbranch' => 'MPL',
-        'timestamp' => '2013-04-30 10:34:08',
+        'timestamp' => '2013-04-30 08:34:08',
         'damaged' => '0',
         'cn_sort' => '',
         'stocknumber' => undef,
@@ -158,7 +155,56 @@ my $expected =  [
         'onloan' => '2013-05-03'
     }
 ];
-is_deeply( $got, $expected, q{biblio with 3 items} );
+for my $i (0 .. scalar(@$expected) - 1) {
+    my $expected_item = $expected->[$i];
+    my $got_item = $got->[$i];
+    foreach my $key (keys $expected_item) {
+        if (exists $got_item->{$key}) {
+            is($got_item->{$key}, $expected_item->{$key}, qq{item has key '$key' and the correct value for this key});
+        } else {
+            fail(qq{item doesn't have key '$key'});
+        }
+    }
+}
+
+$path = "/biblio/1/items?reserves=1";
+$mech->get_ok($path);
+$got = from_json( $mech->response->content );
+$expected->[0]->{reserves} = [{
+    'priority' => '1',
+    'itemnumber' => '1',
+    'constrainttype' => 'a',
+    'reservenotes' => '',
+    'reservedate' => '2013-04-30',
+    'lowestPriority' => '0',
+    'found' => undef,
+    'expirationdate' => undef,
+    'suspend_until' => undef,
+    'rtimestamp' => '2013-04-30 08:59:41',
+    'suspend' => '0',
+    'biblionumber' => '1',
+    'borrowernumber' => '3',
+    'reserve_id' => '2',
+    'branchcode' => 'MPL',
+}];
+$expected->[1]->{reserves} = [];
+$expected->[2]->{reserves} = [];
+
+for my $i (0 .. scalar(@$expected) - 1) {
+    my $expected_item = $expected->[$i];
+    my $got_item = $got->[$i];
+    foreach my $key (keys $expected_item) {
+        if (exists $got_item->{$key}) {
+            if (ref $got_item->{$key} eq 'ARRAY') {
+                is(scalar @{ $got_item->{$key} }, scalar @{ $expected_item->{$key} });
+            } else {
+                is($got_item->{$key}, $expected_item->{$key}, qq{item has key '$key' and the correct value for this key});
+            }
+        } else {
+            fail(qq{item doesn't have key '$key'});
+        }
+    }
+}
 
 # Biblio without items
 $path = "/biblio/6/items";
@@ -172,6 +218,6 @@ is_deeply( $got, $expected, q{biblio without items} );
 $path = "/biblio/142/items";
 $mech->get_ok($path);
 $got = from_json( $mech->response->content );
-$expected = undef;
+$expected = [];
 
 is_deeply( $got, $expected, q{biblio without items} );

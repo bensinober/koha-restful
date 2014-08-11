@@ -40,7 +40,18 @@ sub rm_get_biblio_items {
 
     my %reserves;
     if ($get_reserves) {
-        my $res = C4::Reserves::GetReservesFromBiblionumber($biblionumber);
+        my $res;
+
+        # Since Koha 3.14.06.003, GetReservesFromBiblionumber takes a hashref
+        # as its only parameter, and die if we pass an integer as first
+        # parameter. So this should work for all versions.
+        eval {
+            $res = C4::Reserves::GetReservesFromBiblionumber($biblionumber);
+        };
+        if ($@) {
+            $res = C4::Reserves::GetReservesFromBiblionumber({biblionumber => $biblionumber});
+        }
+
         if ($res) {
             foreach my $reserve (@$res) {
                 push @{ $reserves{ $reserve->{itemnumber} } }, $reserve;
@@ -53,11 +64,11 @@ sub rm_get_biblio_items {
         my $holdingbranchname = C4::Branch::GetBranchName($item->{holdingbranch});
         my $homebranchname = C4::Branch::GetBranchName($item->{homebranch});
         my $r = {
-            (map { +"$_" => $item->{$_} } items_columns),
-            holdingbranchname => $holdingbranchname,
-            homebranchname => $homebranchname,
             withdrawn => $item->{wthdrawn},
             date_due => $item->{datedue},
+            holdingbranchname => $holdingbranchname,
+            homebranchname => $homebranchname,
+            (map { +"$_" => $item->{$_} } items_columns),
         };
 
         if (exists $reserves{ $item->{itemnumber} }) {
@@ -261,6 +272,13 @@ sub rm_biblio_is_holdable {
     my $self = shift;
     my $biblionumber = $self->param('biblionumber');
 
+    unless ($biblionumber and C4::Biblio::GetBiblio($biblionumber)) {
+        my $response = {
+            error => "Biblionumber is missing or does not exists in database"
+        };
+        return format_error($self, '404 Not Found', $response);
+    }
+
     my $q = $self->query();
     my $borrowernumber = $q->param('borrowernumber');
     my $itemnumber = $q->param('itemnumber');
@@ -287,6 +305,13 @@ sub rm_biblio_is_holdable {
 sub rm_get_biblio_items_holdable_status {
     my $self = shift;
     my $biblionumber = $self->param('biblionumber');
+
+    unless ($biblionumber and C4::Biblio::GetBiblio($biblionumber)) {
+        my $response = {
+            error => "Biblionumber is missing or does not exists in database"
+        };
+        return format_error($self, '404 Not Found', $response);
+    }
 
     my $q = $self->query();
     my $borrowernumber = $q->param('borrowernumber');
