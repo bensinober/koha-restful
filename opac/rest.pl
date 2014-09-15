@@ -16,20 +16,20 @@ $conf->{debug} //= 0;
 
 # First of all, let's test if the client IP is allowed to use our service
 # If the remote address is not allowed, redirect to 403
-my @AuthorizedIPs = $conf->{authorizedips} ? @{ $conf->{authorizedips} } : ();
-if ( !@AuthorizedIPs # If no filter set, allow access to no one!
-    or not any { $ENV{'REMOTE_ADDR'} eq $_ } @AuthorizedIPs # IP Check
-    ) {
-    CGI::Application::Dispatch->dispatch(
-        debug => $conf->{debug},
-        prefix => 'Koha::REST',
-        table => [
-            '*' => { app => 'Auth', rm => 'forbidden' },
-            '/' => { app => 'Auth', rm => 'forbidden' },
-        ],
-    );
-    exit 0;
-}
+# my @AuthorizedIPs = $conf->{authorizedips} ? @{ $conf->{authorizedips} } : ();
+# if ( !@AuthorizedIPs # If no filter set, allow access to no one!
+#     or not any { $ENV{'REMOTE_ADDR'} eq $_ } @AuthorizedIPs # IP Check
+#     ) {
+#     CGI::Application::Dispatch->dispatch(
+#         debug => $conf->{debug},
+#         prefix => 'Koha::REST',
+#         table => [
+#             '*' => { app => 'Auth', rm => 'forbidden' },
+#             '/' => { app => 'Auth', rm => 'forbidden' },
+#         ],
+#     );
+#     exit 0;
+# }
 
 
 use Koha::REST::Dispatch;
